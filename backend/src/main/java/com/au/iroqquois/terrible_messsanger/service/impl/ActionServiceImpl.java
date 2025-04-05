@@ -1,6 +1,10 @@
-package com.au.iroqquois.terrible_messsanger.service.impl;import com.au.iroqquois.terrible_messsanger.domain.entity.Action;
+package com.au.iroqquois.terrible_messsanger.service.impl;
+import com.au.iroqquois.terrible_messsanger.domain.entity.Action;
+import com.au.iroqquois.terrible_messsanger.domain.entity.User;
+import com.au.iroqquois.terrible_messsanger.domain.repository.ActionRepository;
 import com.au.iroqquois.terrible_messsanger.service.ActionService;
-import com.au.iroqquois.terrible_messsanger.repository.ActionRepository;
+
+import com.au.iroqquois.terrible_messsanger.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +15,7 @@ import java.util.UUID;
 class ActionServiceImpl implements ActionService {
 
     private final ActionRepository actionRepository;
+    private final UserService userService;
 
     @Override
     public Action create(User user, String actionName) {
@@ -19,6 +24,7 @@ class ActionServiceImpl implements ActionService {
         newAction.setActionName(actionName);
         newAction.setVerified(false);
         actionRepository.save(newAction);
+
         return newAction;
     }
 
@@ -27,28 +33,12 @@ class ActionServiceImpl implements ActionService {
         Action action = actionRepository.findById(id).orElseThrow(() -> new RuntimeException("Action not found"));
 
         // Check JWT token
-        User user = getSelf();
+        User user = userService.getSelf();
         if (!user.getId().equals(action.getUser().getId())) {
             throw new RuntimeException("User not found");
         }
 
         action.setVerified(true);
         actionRepository.save(action);
-    }
-
-    @Override
-    public User getSelf() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null) {
-            Object principal = authentication.getPrincipal();
-
-            if (principal instanceof UserDetails userDetails) {
-                String username = userDetails.getUsername();
-
-                return getEntity(username);
-            }
-        }
-
-        throw new RuntimeException("User not found");
     }
 }
